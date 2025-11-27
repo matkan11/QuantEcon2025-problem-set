@@ -1,6 +1,6 @@
 using Statistics, Plots, DelimitedFiles, Distributions, LinearAlgebra,IterativeSolvers
 # Task 1: Load the dataset from the CVS file 
-data = readdlm("problem_sets//PS1//asset_returns.csv", ',',Float64; skipstart=1)
+data = readdlm("PS1//asset_returns.csv", ',',Float64; skipstart=1)
 (T, n) = size(data)
 
 # Task 2: compute the sample mean vector and sample covariance matrix of the data 
@@ -264,3 +264,5 @@ plot(
     markercolor = :blue,
     markersize = 3
 )
+
+#end
