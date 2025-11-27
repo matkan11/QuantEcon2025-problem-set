@@ -47,3 +47,7 @@ final_plot = plot(plot_list..., layout = (2,2), size=(800,600))
 display(final_plot)
 
 #end 
+
+
+#final thoughts
+#As the sample size increases, the distribution of the sample means becomes more similar to the normal distribution, which confirms CLT
