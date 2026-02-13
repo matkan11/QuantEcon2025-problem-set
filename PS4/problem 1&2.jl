@@ -366,24 +366,49 @@ for γ in [2.0, 10.0]
     println("\nEuler Error Stats (Transformed Method):")
     @printf("Mean: %.4f | 10th: %.4f | Median: %.4f | 90th: %.4f\n", mean_ee, p10, p50, p90)
 
-    #plots
-    if γ == 2.0
-        zoom_range = 1:20 
-        
-        p_pol_zoom = plot(title="Savings Policy (Zoomed)", xlabel="a", ylabel="a'", legend=:topleft)
-        plot!(p_pol_zoom, m_t.a_grid[zoom_range], m_t.a_grid[zoom_range], linestyle=:dash, color=:black, label="45 deg")
-        for i in [1, 6, 11]
-            plot!(p_pol_zoom, m_t.a_grid[zoom_range], pa_t[zoom_range, i], label="z index $(i)", lw=2)
-        end
-        
-        #simulation paths (First 100 periods)
-        t_range = 1:100
-        p_sim_a = plot(t_range, sa_t[t_range], title="Assets Path", label="Assets", ylabel="a_t")
-        p_sim_c = plot(t_range, sc_t[t_range], title="Consumption Path", label="Cons", color=:orange, ylabel="c_t")
-        p_sim_z = plot(t_range, sz[t_range], title="Income Process", label="Income", color=:green, ylabel="z_t")
-        
-        display(plot(p_pol_zoom, p_sim_a, p_sim_c, p_sim_z, layout=(2,2), size=(1000,800)))
+    # plots
+    zoom_range = 1:20 
+    
+    p_pol_zoom = plot(title="Savings Policy (Zoomed, γ=$γ)", xlabel="a", ylabel="a'", legend=:topleft)
+    plot!(p_pol_zoom, m_t.a_grid[zoom_range], m_t.a_grid[zoom_range], linestyle=:dash, color=:black, label="45 deg")
+    for i in [1, 6, 11]
+        plot!(p_pol_zoom, m_t.a_grid[zoom_range], pa_t[zoom_range, i], label="z index $(i)", lw=2)
     end
+    
+    # simulation paths (First 100 periods)
+    t_range = 1:100
+    
+    # Overlay Assets
+    p_sim_a = plot(t_range, sa_t[t_range], title="Assets Path", label="Transformed", ylabel="a_t", lw=2)
+    plot!(p_sim_a, t_range, sa_s[t_range], label="Standard", linestyle=:dash, lw=2)
+    
+    # Overlay Consumption
+    p_sim_c = plot(t_range, sc_t[t_range], title="Consumption Path", label="Transformed", color=:orange, ylabel="c_t", lw=2)
+    plot!(p_sim_c, t_range, sc_s[t_range], label="Standard", linestyle=:dash, color=:red, lw=2)
+    
+    # Income Process
+    p_sim_z = plot(t_range, sz[t_range], title="Income Process", label="Income", color=:green, ylabel="z_t", lw=2)
+    
+    # Calculate and Plot Euler Errors over Time
+    ee_path_t = zeros(100)
+    ee_path_s = zeros(100)
+    for t in t_range
+        #finding z index
+        iz = findfirst(x -> abs(x - sz[t]) < 1e-5, m_t.z_grid)
+        
+        # Interpolate Euler errors for both methods evaluated at current asset simulation points
+        itp_t = linear_interpolation(m_t.a_grid, ee_t[:, iz], extrapolation_bc=Line())
+        itp_s = linear_interpolation(m_std.a_grid, ee_s[:, iz], extrapolation_bc=Line())
+        
+        ee_path_t[t] = itp_t(clamp(sa_t[t], m_t.a_min, maximum(m_t.a_grid)))
+        ee_path_s[t] = itp_s(clamp(sa_s[t], m_std.a_min, maximum(m_std.a_grid)))
+    end
+    
+    p_sim_ee = plot(t_range, ee_path_t, title="Euler Errors Path", label="Transformed", ylabel="Log10 Error", lw=2)
+    plot!(p_sim_ee, t_range, ee_path_s, label="Standard", linestyle=:dash, lw=2)
+    
+    # Display all 5 plots in a nice layout
+    display(plot(p_pol_zoom, p_sim_a, p_sim_c, p_sim_z, p_sim_ee, layout=(3,2), size=(1000, 1200)))
 end
 
 
@@ -580,16 +605,19 @@ C_star, C_path, Δ_agg = run_aggregate_experiment(m_best, policy_c_best, Λ_star
 #impulse response
 irf = (C_path .- C_star) ./ C_star
 
-#cumulative MPCs
-horizons = [1, 4, 8, 12, 20] 
+# cumulative MPCs
+horizons = [0, 1, 4, 8, 12, 20] 
 cum_mpcs = Dict()
 excess_C = C_path .- C_star
 
 println("\n--- Aggregate Results ---")
 for H in horizons
-    #summing excess consumption 
-    total_spent = sum(excess_C[1:H])
-    mpc_H = total_spent / Δ_agg
+    if H == 0
+        mpc_H = 0.0
+    else
+        total_spent = sum(excess_C[1:H])
+        mpc_H = total_spent / Δ_agg
+    end
     cum_mpcs[H] = mpc_H
     println("Cumulative MPC (H=$H periods): $(round(mpc_H, digits=4))")
 end
