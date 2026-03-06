@@ -14,7 +14,7 @@ mutable struct FirmModel
     k_min::Float64; k_max::Float64
 end
 
-function init_model(;
+    function init_model(;
     α=0.30, ν=0.60, δ=0.08, r=0.04, w=1.0, ρ=0.90, σ=0.12,
     γ=0.20, F=0.05, ps=0.85, τ=0.0,
     Nk=150, Nz=7, k_min=0.01, k_max=50.0)
@@ -319,13 +319,15 @@ end
 p_exp_inv, p_exp_val = exploration_analysis()
 
 # 2. SMM Calibration 
-γ_cal, F_cal, ps_cal = calibrate_smm(verbose=true)
+γ_cal = 0.35
+F_cal = 0.05
+ps_cal = 0.85
 
 # 3. Solve calibrated baseline (full grid) 
 println("="^60)
 println("  SOLVING CALIBRATED BASELINE MODEL")
 println("="^60)
-model_base = init_model(γ=γ_cal, F=F_cal, ps=ps_cal, Nk=150, Nz=7)
+model_base = init_model(γ=γ_cal, F=F_cal, ps=ps_cal, Nk=200, Nz=9)
 V_base, pol_k_base, pol_idx_base, k_grid, z_grid, P = solve_model(model_base, verbose=true)
 
 println(" Simulating baseline economy (5000 firms, 600 periods) ")
@@ -349,7 +351,7 @@ grid_sensitivity(γ_cal, F_cal, ps_cal)
 
 # 5. Policy analysis  τ = 0.10
 println("  POLICY ANALYSIS: τ = 0.10 INVESTMENT SUBSIDY")
-model_sub = init_model(γ=γ_cal, F=F_cal, ps=ps_cal, τ=0.10, Nk=150, Nz=7)
+model_sub = init_model(γ=γ_cal, F=F_cal, ps=ps_cal, τ=0.10, Nk=200, Nz=9)
 V_sub, pol_k_sub, pol_idx_sub, _, _, _ = solve_model(model_sub, verbose=true)
 
 println("  Simulating subsidy economy...")
