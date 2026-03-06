@@ -55,7 +55,7 @@ function solve_model(m::FirmModel; tol=1e-6, max_iter=2000, verbose=true)
     # z̃ = exp(-σ²/(2(1-ρ²))) normalises E[z]=1 (Jensen's inequality correction).
     mc        = rouwenhorst(m.Nz, m.ρ, m.σ)
     μ_log_z   = -m.σ^2 / (2 * (1 - m.ρ^2))
-    z_grid    = exp.(mc.state_values .+ μ_log_z)   # FIX: Ez normalisation
+    z_grid    = exp.(mc.state_values .+ μ_log_z)   
     P         = mc.p
 
     # Capital grid (log-spaced)
@@ -93,7 +93,7 @@ function solve_model(m::FirmModel; tol=1e-6, max_iter=2000, verbose=true)
             ev_row    = β .* view(EV, :, z_idx)       # Nk
             total_val = r_slice .+ ev_row'             # broadcast: Nk × Nk
 
-            v_max, pol = findmax(total_val, dims=2)    # FIX: correct dims
+            v_max, pol = findmax(total_val, dims=2)    
             V[:, z_idx]          = vec(v_max)
             policy_idx[:, z_idx] = [ci[2] for ci in vec(pol)]
         end
@@ -129,7 +129,7 @@ function run_simulation(m::FirmModel, policy_idx, k_grid, z_grid, P;
         rng = rand(firms)
         for i in 1:firms
             z_new = searchsortedfirst(view(P_cdf, z_idx_now[i], :), rng[i])
-            z_idx_now[i] = min(z_new, m.Nz)           # FIX: clamp overflow
+            z_idx_now[i] = min(z_new, m.Nz)          
         end
 
         # Capital update via policy
@@ -253,7 +253,7 @@ function calibrate_smm(; verbose=true)
     return γ_opt, F_opt, ps_opt
 end
 
-#  EXPLORATION  (Step 2 of instructions)
+#  EXPLORATION  
 
 function exploration_analysis(; Nk=80, Nz=7)
     println("  STEP 1: MODEL EXPLORATION")
